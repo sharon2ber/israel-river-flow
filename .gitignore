@@ -1,0 +1,24 @@
+# dependencies — restored by `npm install`
+node_modules/
+
+# the Leaflet tarball, kept only because the sandbox had no registry access
+leaflet-1.9.4.tgz
+package/
+
+# Playwright output
+shots/
+test-results/
+
+# Natural Earth working copies. These are one-off inputs, not project data:
+# data/borders.json, extent.json and coast.json were derived from them and are
+# checked in. Re-download from naturalearthdata.com only if you need to redo that.
+data/ne_10m_*.geojson
+
+# editor / OS noise
+.DS_Store
+*.swp
+__pycache__/
+
+# working notes, including a study of a third-party site that points out a
+# weakness in its live key handling. Not mine to publish.
+notes/
