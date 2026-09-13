@@ -1,0 +1,37 @@
+{
+  "name": "israel-river-flow",
+  "version": "1.0.0",
+  "description": "An animated live streamflow map of Israel's rivers and wadis, as one self-contained HTML file.",
+  "scripts": {
+    "build": "python3 build.py",
+    "test": "node test/run.js"
+  },
+  "keywords": [
+    "israel",
+    "rivers",
+    "wadi",
+    "streamflow",
+    "hydrology",
+    "leaflet",
+    "map",
+    "nahal",
+    "glofas"
+  ],
+  "author": {
+    "name": "Sharon Berkovich",
+    "email": "sharon@maji.world",
+    "url": "https://www.linkedin.com/in/sharon-berkovich/"
+  },
+  "license": "AGPL-3.0-or-later",
+  "devDependencies": {
+    "playwright": "^1.47.2"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sharon2ber/israel-river-flow.git"
+  },
+  "homepage": "https://sharon2ber.github.io/israel-river-flow/"
+}
