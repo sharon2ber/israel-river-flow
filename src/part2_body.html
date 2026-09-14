@@ -1,0 +1,123 @@
+<div class="panel" id="head">
+  <div class="kicker"><span class="dot"></span><span data-t="live">LIVE STREAMFLOW</span></div>
+  <h1 data-t="title">River Flow Israel</h1>
+  <p data-t="tagline">Direction, force and condition of Israel's rivers and wadis.</p>
+  <div id="stat"></div>
+  <div id="headfoot">
+    <div class="seg" id="langseg">
+      <button data-lang="en" class="on">English</button>
+      <button data-lang="he">עברית</button>
+    </div>
+    <button class="lnk" id="aboutbtn" data-t="b_about">About the data</button>
+  </div>
+</div>
+
+<div class="panel" id="ctl">
+  <div class="sect" data-t="s_base">BASEMAP</div>
+  <button class="btn" id="basebtn" style="width:100%;text-align:start" data-t="b_base">Change basemap</button>
+
+  <div class="sect" data-t="s_ctl">MAP CONTROLS</div>
+  <div class="ctlrow">
+    <div class="lbl"><span data-t="c_speed">Flow speed</span><span class="val" id="speedv">1.0×</span></div>
+    <input type="range" id="speed" min="0" max="30" value="10"></div>
+  <div class="ctlrow">
+    <div class="lbl"><span data-t="c_day">Day</span><span class="val" id="dayv">today</span></div>
+    <input type="range" id="day" min="-7" max="7" value="0"></div>
+  <div class="ctlrow">
+    <div class="lbl"><span data-t="c_min">Show from</span></div>
+    <select id="minq">
+      <option value="-1" data-t="o_all">all</option>
+      <option value="0.05">0.05 m³/s</option>
+      <option value="0.5">0.5 m³/s</option>
+      <option value="2">2 m³/s</option>
+      <option value="10">10 m³/s</option>
+    </select></div>
+
+  <div class="sect" data-t="s_layers">MAP LAYERS</div>
+
+  <div class="grp" data-g="water">
+    <button class="ghead"><span class="gcar">▸</span><span data-t="g_water">Water</span></button>
+    <div class="gbody">
+  <div class="row"><label data-k="springs"><i class="sw"><svg viewBox="0 0 10 10"><path d="M1 5l2.6 2.6L9 2" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="gly">○</span><span data-t="sp_layer">sp_layer</span></label></div>
+  <div class="row"><label data-k="water"><i class="sw"><svg viewBox="0 0 10 10"><path d="M1 5l2.6 2.6L9 2" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="gly">▲</span><span data-t="l_res">l_res</span></label></div>
+  <div class="row"><label data-k="radar"><i class="sw"><svg viewBox="0 0 10 10"><path d="M1 5l2.6 2.6L9 2" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="gly">◐</span><span data-t="l_radar">l_radar</span></label></div>
+    </div>
+  </div>
+
+  <div class="grp" data-g="measure">
+    <button class="ghead"><span class="gcar">▸</span><span data-t="g_measure">Measurement</span></button>
+    <div class="gbody">
+  <div class="row"><label data-k="stations"><i class="sw"><svg viewBox="0 0 10 10"><path d="M1 5l2.6 2.6L9 2" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="gly">◍</span><span data-t="l_st">l_st</span></label></div>
+  <div class="row"><label data-k="sampling"><i class="sw"><svg viewBox="0 0 10 10"><path d="M1 5l2.6 2.6L9 2" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="gly">◉</span><span data-t="l_samp">l_samp</span></label></div>
+    </div>
+  </div>
+
+  <div class="grp" data-g="context">
+    <button class="ghead"><span class="gcar">▸</span><span data-t="g_context">Context</span></button>
+    <div class="gbody">
+  <div class="row"><label data-k="borders"><i class="sw"><svg viewBox="0 0 10 10"><path d="M1 5l2.6 2.6L9 2" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="gly">┆</span><span data-t="l_bord">l_bord</span></label></div>
+  <div class="row"><label data-k="crossings"><i class="sw"><svg viewBox="0 0 10 10"><path d="M1 5l2.6 2.6L9 2" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="gly">◈</span><span data-t="l_cross">l_cross</span></label></div>
+  <div class="row"><label data-k="trans"><i class="sw"><svg viewBox="0 0 10 10"><path d="M1 5l2.6 2.6L9 2" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="gly">○</span><span data-t="l_trans">l_trans</span></label></div>
+    </div>
+  </div>
+
+  <div class="grp" data-g="marks">
+    <button class="ghead"><span class="gcar">▸</span><span data-t="g_marks">Labels &amp; analysis</span></button>
+    <div class="gbody">
+  <div class="row"><label data-k="names"><i class="sw"><svg viewBox="0 0 10 10"><path d="M1 5l2.6 2.6L9 2" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="gly">≈</span><span data-t="l_nm">l_nm</span></label></div>
+  <div class="row"><label data-k="anom"><i class="sw"><svg viewBox="0 0 10 10"><path d="M1 5l2.6 2.6L9 2" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="gly">±</span><span data-t="l_an">l_an</span></label></div>
+    </div>
+  </div>
+
+  <div class="sect" data-t="s_search">SEARCH THE MAP</div>
+  <input type="search" id="q" placeholder="Nahal Yarkon…" autocomplete="off">
+  <div id="qres" style="margin-top:6px"></div>
+
+</div>
+
+<div class="panel" id="basemenu"></div>
+
+<div class="panel" id="leg">
+  <div class="sect" data-t="s_leg">STREAMFLOW</div>
+  <div class="lgrid" id="lgrid"></div>
+  <p class="note" id="relnote" style="margin-bottom:7px"></p>
+  <p class="note" data-t="legnote">Colour and width show discharge (m³/s, log scale). Motion runs downstream. Values are modelled, not measured — see About the data.</p>
+</div>
+
+<div class="panel" id="info">
+  <button class="close" id="infox">×</button>
+  <h3 id="iname"></h3>
+  <div class="sub" id="isub"></div>
+  <div class="big" id="iq"></div>
+  <dl id="idl"></dl>
+  <canvas id="spark"></canvas>
+</div>
+
+<div id="boot"><div class="in">
+  <div class="wave"><i></i><i></i><i></i><i></i><i></i></div>
+  <h2 data-t="b_h">Building Israel’s stream network</h2>
+  <p data-t="b_p">Fetching Israel's streams from the Water Authority, then asking the GloFAS flood model how much water is moving through them today. This happens once — after that it is cached in your browser.</p>
+  <div id="bar"><i></i></div>
+  <div id="bmsg"></div>
+</div></div>
+
+<div id="trace"><div class="card">
+  <button class="close" id="tracex">×</button>
+  <div id="tracebody"></div>
+</div></div>
+
+<div id="about"><div class="card">
+  <button class="close" id="aboutx">×</button>
+  <div id="abouttext"></div>
+</div></div>
+
+<script>/*LEAFLET_JS*/</script>
+<script>
+"use strict";
+const STATIONS = /*STATIONS*/;
+const BORDERS = /*BORDERS*/;
+const EXTENT = /*EXTENT*/;
+const BAKED_VALIDATION = /*VALIDATION*/;
+const REGIME = /*REGIME*/;
+const COAST = /*COAST*/;
+const SPRINGS = /*SPRINGS*/;
