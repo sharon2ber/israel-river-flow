@@ -1,6 +1,7 @@
 const { chromium } = require("playwright");
 const path = require("path");
 const F = require("./fixtures");
+const ENV = require("./env");
 
 const CLEAR_TILE = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=", "base64");
 const TILE = Buffer.from(
@@ -8,7 +9,7 @@ const TILE = Buffer.from(
   "base64");
 
 (async () => {
-  const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell" });
+  const browser = await chromium.launch(ENV.launchOptions());
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
 
   const errors = [], warns = [];
@@ -421,9 +422,39 @@ const TILE = Buffer.from(
   await page.waitForTimeout(800);
   await page.screenshot({ path: "shots/09-warm.png" });
 
-  console.log(JSON.stringify({ stat, state, tipVisible,
+  const report = { stat, state, tipVisible,
     infoHas: infoText.slice(0, 120), stationHas: stTxt.slice(0, 120),
     searchHits, dayLabel, dir, surf, baked, verify, vmodel, compare, overruled, perennial, spring, spine, gapfill, trace, coast, basin, unver, away, backHome, pruned,
-    warmMs, errors, warns: warns.slice(0,5) }, null, 2));
+    warmMs, errors, warns: warns.slice(0,5) };
+  console.log(JSON.stringify(report, null, 2));
   await browser.close();
+
+  /* Until now this file printed its findings and exited 0 whatever they were,
+     so neither CI nor a contributor could tell a pass from a failure. The
+     checks below are deliberately structural rather than numeric: they assert
+     that the map booted, drew a network, classified it and kept its panels
+     working, and they say nothing about how many reaches happen to be flowing
+     on the fixture data, because that is allowed to change. */
+  const must = [
+    ["no page or console errors", errors.length === 0, errors.slice(0, 3).join(" | ")],
+    ["river network was built", state && state.reaches > 0, state && state.reaches],
+    ["discharge reached the reaches", state && state.withFlow > 0, state && state.withFlow],
+    ["a day window exists", state && state.times > 0, state && state.times],
+    ["gauging stations loaded", state && state.stations > 0, state && state.stations],
+    ["border crossings computed", state && state.crossings > 0, state && state.crossings],
+    ["hover tooltip appears", tipVisible && tipVisible !== "none", tipVisible],
+    ["search returns hits", searchHits > 0, searchHits],
+    ["a reach panel has content", infoText.length > 0, infoText.length],
+    ["the trace view opens", trace && trace.open === true, trace && trace.open],
+    ["the regime table is populated", compare && compare.matched > 0, compare && compare.matched],
+    ["warm reload re-used the cache", warmMs < 30000, warmMs],
+    ["home button returns to Israel", Array.isArray(backHome) && Math.abs(backHome[0] - 31.45) < 2, backHome]
+  ];
+  let bad = 0;
+  for (const [name, ok, got] of must){
+    if (!ok) bad++;
+    console.log((ok ? "ok  " : "FAIL"), name.padEnd(38), ok ? "" : "got: " + got);
+  }
+  console.log(bad ? "\n" + bad + " FAILED" : "\nall " + must.length + " checks pass");
+  process.exit(bad ? 1 : 0);
 })();

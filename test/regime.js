@@ -5,11 +5,16 @@
    source changes shape, this fails rather than quietly mis-classifying. */
 const fs = require("fs");
 const path = require("path");
+const ENV = require("./env");
 const REGIME = JSON.parse(fs.readFileSync(path.join(__dirname, "../data/regime.json"), "utf8"));
-const src = fs.readFileSync(path.join(__dirname, "../dist/river_flow_israel.html"), "utf8");
+const src = ENV.distSource();
 
-const block = src.match(/const REG_NEAR_KM[\s\S]*?\nfunction assignRegimes/)[0]
-                 .replace(/\nfunction assignRegimes$/, "");
+const found = src.match(/const REG_NEAR_KM[\s\S]*?\nfunction assignRegimes/);
+if (!found){
+  console.error("Could not find the regime block in dist/. Did src/part4c_regime.js move?");
+  process.exit(1);
+}
+const block = found[0].replace(/\nfunction assignRegimes$/, "");
 const api = new Function("REGIME",
   block.replace(/^const /gm, "var ").replace(/^let /gm, "var ") +
   "; return { regNorm:regNorm, regimeFor:regimeFor, haverKm:haverKm };")(REGIME);

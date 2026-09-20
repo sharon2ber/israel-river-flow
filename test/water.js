@@ -4,12 +4,10 @@
    Galilee, the Jordan Valley and the Dead Sea. The bare natural=water ones
    are the bug this guards: 1,148 of 2,611 polygons in that box carry no
    subtype at all, and many are named "ma'agar" — reservoir — in Hebrew. */
-const fs = require("fs");
-const src = fs.readFileSync(__dirname + "/../dist/river_flow_israel.html", "utf8");
-const block = src.match(/const NOT_LAKE_RE[\s\S]*?const WATER_FILLED = \{[^}]*\};/)[0];
-const { waterKind, WATER_FILLED } =
-  new Function(block.replace(/^const /gm, "var ") +
-               "; return { waterKind:waterKind, WATER_FILLED:WATER_FILLED };")();
+const ENV = require("./env");
+const { waterKind, WATER_FILLED } = ENV.extract(
+  /const NOT_LAKE_RE[\s\S]*?const WATER_FILLED = \{[^}]*\};/,
+  ["waterKind", "WATER_FILLED"]);
 
 const CASES = [
   [{natural:"water",water:"lake",name:"ימת הכנרת","name:en":"Sea of Galilee",intermittent:"no",salt:"no"}, "lake", 1],

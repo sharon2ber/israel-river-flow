@@ -2,13 +2,13 @@
 const { chromium } = require("playwright");
 const path = require("path");
 const F = require("./fixtures");
+const ENV = require("./env");
 
 const CLEAR_TILE = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=", "base64");
 const TILE = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
   "base64");
-const EXE = "/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell";
-const FILE = "file://" + path.resolve(__dirname, "../dist/river_flow_israel.html");
+const FILE = ENV.distUrl();
 
 /* split the fixture rivers across bands by latitude so each band returns some */
 function bandOf(body){
@@ -26,7 +26,7 @@ function riversFor(bb){
 }
 
 async function run(name, plan){
-  const browser = await chromium.launch({ executablePath: EXE });
+  const browser = await chromium.launch(ENV.launchOptions());
   const page = await browser.newPage({ viewport: { width: 1280, height: 820 } });
   const errors = [];
   page.on("pageerror", e => errors.push("PAGEERROR: " + e.message));
@@ -126,4 +126,31 @@ async function run(name, plan){
   /* the official layer down, OSM healthy: the map must fall back cleanly */
   results.push(await run("no-official", (n, body) => body === "AGS" ? "no-ags" : "ok"));
   console.log(JSON.stringify(results, null, 1));
+
+  /* What resilience means here: a failing source must degrade the map, never
+     break it. Every scenario has to finish booting and leave the reader with
+     something honest on screen — so no scenario may raise a page error, and
+     the only one allowed to draw nothing is the one where every river source
+     is dead, which is supposed to offer "continue without rivers" instead. */
+  /* A blocked request logs a console error in the browser, and blocking
+     requests is the entire point of these scenarios — so network noise is
+     expected and ignored. What must never happen is an uncaught exception:
+     that is the map breaking rather than degrading. */
+  const realFailure = e => e.startsWith("PAGEERROR:") || e.includes("PAGE CRASHED");
+  let bad = 0;
+  for (const r of results){
+    const thrown = (r.errors || []).filter(realFailure);
+    const noErrors = thrown.length === 0;
+    if (!noErrors) bad++;
+    console.log((noErrors ? "ok  " : "FAIL"), (r.name || "?").padEnd(20),
+                "uncaught=" + thrown.length + (noErrors ? "" : " " + thrown[0].slice(0, 90)));
+    if (r.name !== "total-outage"){
+      const drew = (r.reaches || 0) > 0;
+      if (!drew) bad++;
+      console.log((drew ? "ok  " : "FAIL"), (r.name + " drew a network").padEnd(20),
+                  "reaches=" + (r.reaches || 0));
+    }
+  }
+  console.log(bad ? "\n" + bad + " FAILED" : "\nall scenarios pass");
+  process.exit(bad ? 1 : 0);
 })();
