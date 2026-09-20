@@ -4,7 +4,12 @@
   "description": "An animated live streamflow map of Israel's rivers and wadis, as one self-contained HTML file.",
   "scripts": {
     "build": "python3 build.py",
-    "test": "node test/run.js"
+    "pretest": "npm run build",
+    "test": "node test/build.js && node test/flow.js && node test/water.js && node test/regime.js && node test/run.js",
+    "test:unit": "node test/build.js && node test/flow.js && node test/water.js && node test/regime.js",
+    "test:ui": "node test/run.js",
+    "test:resilience": "node test/resilience.js",
+    "test:all": "npm test && npm run test:resilience"
   },
   "keywords": [
     "israel",
