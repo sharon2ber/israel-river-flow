@@ -1,0 +1,62 @@
+# Runs on every pull request and every push to main.
+# Reproduce the whole thing locally with:
+#     npm ci && npx playwright install chromium && npm run test:all
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The Playwright tests drive a real headless Chromium. Every external
+      # host is stubbed from test/fixtures.js, so no network access is needed
+      # beyond this download.
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+
+      # `npm test` runs the build first (via the pretest hook), because every
+      # test checks dist/river_flow_israel.html rather than the parts in src/.
+      - name: Build and test
+        run: npm test
+
+      - name: Source-failure scenarios
+        run: npm run test:resilience
+
+      # The committed dist/ must match what src/ builds, or the repository is
+      # shipping something nobody can reproduce.
+      - name: dist/ matches src/
+        run: |
+          if ! git diff --quiet -- dist/; then
+            echo "::error::dist/river_flow_israel.html does not match a fresh build of src/."
+            echo "Run 'npm run build' and commit the result."
+            git diff --stat -- dist/
+            exit 1
+          fi
+          echo "dist/ is reproducible from src/"
+
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-screenshots
+          path: shots/
+          if-no-files-found: ignore
