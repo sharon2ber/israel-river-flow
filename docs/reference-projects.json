@@ -1,0 +1,199 @@
+{
+  "_comment": "Open-source river/streamflow projects surveyed for River Flow Israel. Kept as a registry rather than as vendored code: scripts/fetch-reference-projects.sh re-clones any of them on demand. 'integration' is a licence verdict, not a technical one - read docs/PROJECT_REGISTRY.md before reusing anything.",
+  "surveyed": "2026-09-28",
+  "projects": [
+    {
+      "repo": "ZoliQua/Magyar-Vizugy",
+      "url": "https://github.com/ZoliQua/Magyar-Vizugy",
+      "country": "Hungary",
+      "what": "River water-level monitor: 124 gauges on 23 rivers, map plus per-station history charts, hourly ingestion",
+      "stack": [
+        "Next.js",
+        "Postgres/Drizzle",
+        "MapLibre GL",
+        "ECharts",
+        "GitHub Actions cron"
+      ],
+      "national_feeds": [
+        "https://www.vizugy.hu (OVF, General Directorate of Water Management)",
+        "hydroinfo.hu (on their roadmap, not yet used)"
+      ],
+      "licence": "NONE FOUND",
+      "integration": "ideas-only",
+      "integration_note": "No licence file in the repository, which means all rights reserved. Study freely, copy nothing.",
+      "take": [
+        "24h trend with a dead band and a null state",
+        "explicit staleness flag",
+        "implausible-jump 'suspect' quality flag",
+        "official flood-alert thresholds as colour bands",
+        "bilingual README"
+      ],
+      "examined": "full"
+    },
+    {
+      "repo": "flukelaster/SIAHRA",
+      "url": "https://github.com/flukelaster/SIAHRA",
+      "country": "Thailand",
+      "what": "3D geospatial hazard platform: real-time flood, rainfall, dam and earthquake monitoring by province",
+      "stack": [
+        "React 19",
+        "TypeScript"
+      ],
+      "national_feeds": [
+        "https://api-v3.thaiwater.net/api/v1/thaiwater30 (water levels, dams, 24h rain)",
+        "https://api-gateway.gistda.or.th/api/2.0/resources/features/flood (flood extent, incl. 3-day)"
+      ],
+      "licence": "MIT",
+      "integration": "code-reusable",
+      "integration_note": "MIT: reuse with attribution.",
+      "take": [
+        "a national feed catalogue for Thailand",
+        "dam state as a first-class layer",
+        "multi-hazard framing"
+      ],
+      "examined": "sources and README"
+    },
+    {
+      "repo": "TNRIS/flood",
+      "url": "https://github.com/TNRIS/flood",
+      "country": "United States (Texas)",
+      "what": "Flood viewer over USGS and NWS gauges with SMS subscription. Archived read-only, September 2024",
+      "stack": [
+        "React",
+        "webpack"
+      ],
+      "national_feeds": [
+        "http://water.weather.gov/ahps/ (NOAA AHPS river forecast)",
+        "http://waterdatafortexas.org/",
+        "aerisapi.com (commercial, key required)"
+      ],
+      "licence": "MIT",
+      "integration": "code-reusable",
+      "integration_note": "MIT, but archived and depends on a commercial weather key.",
+      "take": [
+        "NOAA AHPS as a forecast source",
+        "alert subscription as a product idea"
+      ],
+      "examined": "sources and README"
+    },
+    {
+      "repo": "sdl60660/river-runner",
+      "url": "https://github.com/sdl60660/river-runner",
+      "country": "global",
+      "what": "Animates the path of a raindrop downstream to the sea",
+      "stack": [
+        "Svelte",
+        "Mapbox GL"
+      ],
+      "national_feeds": [
+        "https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position (USGS NLDI, keyless downstream navigation)",
+        "https://geoconnex.us/",
+        "https://ksonda.github.io/global-river-runner/ (MERIT-based global API)"
+      ],
+      "licence": "GPL-3.0",
+      "integration": "ideas-only",
+      "integration_note": "GPL-3.0, which can legally be combined with this project's AGPL-3.0. Marked ideas-only by choice, not by licence: it is unusable as shipped without two Mapbox tokens, which breaks the no-keys rule. The valuable part is the NLDI endpoint, not the code.",
+      "take": [
+        "USGS NLDI for downstream navigation",
+        "MERIT Hydro as a global network with connectivity"
+      ],
+      "examined": "sources and README"
+    },
+    {
+      "repo": "interTwin-eu/dask-flood-mapper",
+      "url": "https://github.com/interTwin-eu/dask-flood-mapper",
+      "country": "global",
+      "what": "Sentinel-1 flood extent by the Bayesian decision method of Bauer-Marschallinger et al. (2022)",
+      "stack": [
+        "Python",
+        "Dask",
+        "xarray",
+        "STAC"
+      ],
+      "national_feeds": [
+        "https://stac.eodc.eu/api/v1 (European Open Data Centre STAC - no NASA Earthdata login)"
+      ],
+      "licence": "MIT",
+      "integration": "code-reusable",
+      "integration_note": "MIT, pip-installable, and the only keyless route to observed water extent found in this survey.",
+      "take": [
+        "observed surface water for reservoirs, lakes and large floods, baked offline into data/"
+      ],
+      "examined": "sources, config and README"
+    },
+    {
+      "repo": "DOI-USGS/flow-tiles",
+      "url": "https://github.com/DOI-USGS/flow-tiles",
+      "country": "United States",
+      "what": "Official USGS cartogram of streamflow percentile against the historic record",
+      "stack": [
+        "R",
+        "targets"
+      ],
+      "national_feeds": [
+        "USGS internal pipeline (USGS-VIZLAB/gage-conditions-gif); not directly callable"
+      ],
+      "licence": "Creative Commons",
+      "integration": "method-only",
+      "integration_note": "Depends on a USGS-internal pipelining package. The framing is the value, not the code.",
+      "take": [
+        "'flow percentile relative to the historic record' as the standard way to express flow vs normal"
+      ],
+      "examined": "README and plotting source"
+    },
+    {
+      "repo": "mohsennasab/GageMap",
+      "url": "https://github.com/mohsennasab/GageMap",
+      "country": "United States",
+      "what": "Upload a project boundary, get every USGS gauge within and around it",
+      "stack": [
+        "FastAPI",
+        "Folium"
+      ],
+      "national_feeds": [
+        "https://waterservices.usgs.gov/nwis/site/ (USGS NWIS, keyless)"
+      ],
+      "licence": "custom open source",
+      "integration": "check-licence",
+      "integration_note": "Custom licence text in the README; read it before reusing.",
+      "take": [
+        "USGS NWIS site service for gauge discovery"
+      ],
+      "examined": "sources and README"
+    },
+    {
+      "repo": "timlg07/River-Water-Levels-in-Bavaria",
+      "url": "https://github.com/timlg07/River-Water-Levels-in-Bavaria",
+      "country": "Germany (Bavaria)",
+      "what": "Interactive dashboard of Bavarian river water levels",
+      "stack": [
+        "unknown"
+      ],
+      "national_feeds": [
+        "unknown - likely gkd.bayern.de, unverified"
+      ],
+      "licence": "unknown",
+      "integration": "unknown",
+      "integration_note": "Repository exists but the clone timed out twice; nothing here has been verified.",
+      "take": [],
+      "examined": "none"
+    },
+    {
+      "repo": "kleok/FLOODPY",
+      "url": "https://github.com/kleok/FLOODPY",
+      "country": "global",
+      "what": "Flood Python Toolbox, SAR-based flood mapping",
+      "stack": [
+        "Python"
+      ],
+      "national_feeds": [
+        "unverified"
+      ],
+      "licence": "unverified",
+      "integration": "unknown",
+      "integration_note": "Found in search, not cloned or examined.",
+      "take": [],
+      "examined": "search result only"
+    }
+  ]
+}

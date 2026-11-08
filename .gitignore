@@ -22,3 +22,7 @@ __pycache__/
 # working notes, including a study of a third-party site that points out a
 # weakness in its live key handling. Not mine to publish.
 notes/
+
+
+# reference projects, re-cloned on demand by scripts/fetch-reference-projects.sh
+reference/
