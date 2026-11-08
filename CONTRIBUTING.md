@@ -186,4 +186,8 @@ without asking anyone. Several are marked as good first issues.
   built-in attributions are part of meeting their terms — see [NOTICE.md](NOTICE.md).
 
 Contributions are licensed under the [GNU AGPL v3 or later](LICENSE), the same as the
-project. Add yourself to [AUTHORS](AUTHORS) in the same commit.
+project. **You keep your copyright**, and you agree to the short [contributor agreement](CLA.md)
+by keeping the line `I have read CLA.md and agree to it.` in your pull request description
+(the pull request template already has it). It exists so the project can later change licence,
+or be folded into a larger open project, without having to find every contributor again; the
+public source always stays open. Add yourself to [AUTHORS](AUTHORS) in the same commit.
