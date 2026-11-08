@@ -350,6 +350,13 @@ must keep the copyright notice and publish your changes under the same licence.<
 Authority and the Hydrological Service, govmap.gov.il, data.gov.il, Copernicus EMS (GloFAS) via
 Open-Meteo, RainViewer, OpenStreetMap contributors (ODbL), Natural Earth, Esri and
 OpenTopoMap. Mapping library: Leaflet, BSD-2-Clause.</p>
+<p><b>Measured discharge and water level originate from the Israel Hydrological Service</b>
+(Israel Water Authority), supplied through their data retrieval API under a permission granted to
+this project. The permission is conditional on the information being shown free of charge and on
+this attribution being stated, which is why both are kept here. Note that the AGPL above covers
+the <i>software</i> only: anyone redistributing this map commercially, or charging for access to
+the measured data, needs their own permission from the Hydrological Service &mdash; the licence on
+the code does not grant it.</p>
 <p>This map carries no warranty of any kind. It is not a flood warning system. Do not enter a
 wadi on the strength of it.</p>
 <p style="margin-top:16px"><button class="lnk" id="rebuild">Rebuild network cache</button></p>`;
@@ -661,6 +668,11 @@ GNU Affero General Public License גרסה 3</a> או מתקדמת ממנה. מ�
 govmap.gov.il, data.gov.il, ‏Copernicus EMS (GloFAS) דרך Open-Meteo, ‏RainViewer, תורמי
 OpenStreetMap (ODbL), ‏Natural Earth, ‏Esri ו־OpenTopoMap. ספריית המפות: Leaflet, ברישיון
 BSD-2-Clause.</p>
+<p><b>נתוני הספיקה ומפלס המים המדודים מקורם בשירות ההידרולוגי הישראלי</b> (רשות המים), והם
+מתקבלים דרך פלטפורמת שליפת הנתונים שלהם, באישור שניתן לפרויקט הזה. האישור מותנה בכך שהמידע יוצג
+ללא תשלום ושיצוין מקורו, ולכן שני התנאים נשמרים כאן. חשוב לשים לב: רישיון ה־AGPL שלמעלה חל על
+<i>התוכנה</i> בלבד. מי שמפיץ את המפה למטרות מסחריות, או גובה תשלום על הגישה לנתונים המדודים, נדרש
+לאישור נפרד מהשירות ההידרולוגי &mdash; הרישיון על הקוד אינו מעניק אותו.</p>
 <p>המפה הזו ניתנת בלי כל אחריות. היא אינה מערכת התרעת שיטפונות. אל תיכנסו לוואדי על סמך מה
 שכתוב בה.</p>
 <p style="margin-top:16px"><button class="lnk" id="rebuild">בנייה מחדש של המטמון</button></p>`;
