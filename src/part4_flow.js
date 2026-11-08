@@ -308,6 +308,14 @@ const WX_API = "https://api.open-meteo.com/v1/forecast";
 const RAIN_WINDOW = 14;      /* days of antecedent rain that count */
 const RAIN_MM = 5;           /* mm over that window before flow is credible */
 
+/* A measured gauge reading (see part4j_measured.js). PROVISIONAL: these were
+   chosen before any real collected data existed, to be checked against it.
+   Both fail toward "no measurement", which drops a reach back down the ladder. */
+const MEAS_MAX_AGE_MIN = 180;      /* a reading older than this is not evidence about now */
+const MEAS_FUTURE_SLACK_MIN = 10;  /* a reading stamped later than now+this is a clock or zone bug */
+const MEAS_SNAP_KM = 1.5;          /* the gauge must sit this close to the reach's line, on the same stream */
+const MEAS_MAX_REACH_KM = 6;       /* a reach longer than this is too long for one point to speak for it */
+
 async function fetchRainBatch(slice){
   const lats = [], lons = [];
   for (const c of slice){ const p = cellCenter(c); lats.push(p[0].toFixed(3)); lons.push(p[1].toFixed(3)); }
@@ -384,6 +392,14 @@ const EV_NODATA = 0, EV_DRY = 1, EV_FLOW = 2, EV_UNVER = 3, EV_STOPPED = 4;
 
 /* One reach, judged on its own evidence, before the river is considered. */
 function reachState(r, q, rainMM, perennialUp, springUp, radarUp){
+  /* a fresh gauge reading on this very reach: the one observation of the water
+     itself, so it outranks every model, radar included. r.meas is only ever set
+     by measuredFor(), which has already refused stale, frozen, missing, other-
+     stream and distant readings. It speaks for this reach alone: nothing is
+     carried upstream, and a measured zero is not carried downstream. */
+  if (r.meas && r.meas.q != null && isFinite(r.meas.q))
+    return r.meas.q < DRY_Q ? { ev: EV_DRY, why: "measured" }
+                            : { ev: EV_FLOW, why: "measured" };
   if (q == null || !isFinite(q)) return { ev: EV_NODATA, why: null };
   if (q < DRY_Q) return { ev: EV_DRY, why: null };
   const reg = r.reg && r.reg.rec ? r.reg.rec.c : null;
@@ -443,9 +459,17 @@ function reachState(r, q, rainMM, perennialUp, springUp, radarUp){
 function evidencePass(){
   const date = S.times[S.dayIdx];
   const n = S.reaches.length;
+  const nowMs = Date.now();
 
   for (let i = 0; i < n; i++){
     const r = S.reaches[i];
+    /* the measured discharge replaces the model's on the reach it was taken on,
+       so the line is drawn at what was measured, and says so. This cannot outlive
+       the reading: evidencePass() only ever runs at the end of reliabilityPass(),
+       which resets qShow and conf for every reach first. Keep it that way, or
+       restore the model value here before overriding. */
+    r.meas = measuredFor(r, nowMs, date);
+    if (r.meas){ r.qShow = r.meas.q; r.conf = 2; }
     r.rain = r.cell ? rainBefore(r.cell, date) : null;
     r.radar = r.cell ? radarFor(r.cell) : null;
     /* the hydrologically correct question, where the catchment is known */

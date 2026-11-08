@@ -83,9 +83,47 @@ So the record is used for two things, and neither is "is there water today":
 
 Today's state comes entirely from live sources: GloFAS, rainfall and radar.
 
-Current measured discharge exists — the Hydrological Service runs an API — but
-access requires a signed undertaking sent to `Forecasterihs@water.gov.il`. If
-that ever lands, it belongs at the very top of the evidence ladder, above radar.
+---
+
+## Measured real-time discharge — access granted, October 2026
+
+The Hydrological Service granted this project access to their data retrieval API.
+It serves **measured discharge and water level at 10-minute resolution** across
+109 stations, 88 of them active. This is the source the project never had, and it
+belongs at the very top of the evidence ladder, above radar: a gauge reading is
+not an inference about whether water is in the channel, it is a measurement of it.
+
+Four properties shape how it is used, and none of them is negotiable:
+
+1. **The token is secret and IP-bound.** A single-file public map cannot hold a
+   credential — anything inside the HTML is readable by whoever opens it, and
+   visitors have their own IP addresses anyway. **The map never calls this API.**
+   The maintainer calls it and the map reads a baked file, exactly as it already
+   reads `regime.json`.
+2. **Only the last ~42 hours are served.** There is no archive behind it. A
+   ten-minute reading not collected is gone permanently. So collection is a
+   cumulative append-only store, run on a schedule — explicitly permitted by the
+   Service — and not a query made on demand.
+3. **Display is permitted on two conditions**, confirmed by the Service: the
+   information is shown **free of charge**, and its **origin is stated**. Both
+   are in the map's credit panel in both languages. See
+   [NOTICE.md](../NOTICE.md) for why the AGPL does not extend this permission to
+   a commercial fork.
+4. **It cannot run on GitHub Actions.** Hosted runners get a different IP each
+   time and the allowlist refuses them. Collection runs on a machine with the
+   registered address.
+
+The collector and its findings against the live service live outside this
+repository, since the token must never be near it.
+
+Inside the repository: `scripts/build_measured.py` reduces the collector's store to
+`data/measured.json` (latest valid reading per station, a thin hourly series, a flag
+for frozen sensors), and `src/part4j_measured.js` decides, when the map is viewed,
+whether a reading may speak for a reach. The rules are strict and all fail toward "no
+measurement": the reading must be fresh, from today, on a stream of the same name, within
+1.5 km of the reach, and the reach no longer than 6 km. Those thresholds are provisional
+until real collected data can be checked against them. Until readings are collected and
+baked, `data/measured.json` is empty and the rung does nothing.
 
 ---
 
@@ -111,3 +149,7 @@ Data belongs to the bodies that publish it, under their own terms — see
 [NOTICE.md](../NOTICE.md). OpenStreetMap is ODbL and its attribution is built
 into the map. Do not remove the attributions; they are part of meeting those
 terms.
+
+The Hydrological Service attribution is a stricter case than the rest: it is a
+condition of the permission that put the measured readings on the map at all, not
+a licence footnote. Removing it, or charging for the data, ends the permission.

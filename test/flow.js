@@ -47,7 +47,9 @@ const reach = (o = {}) => ({
   reg: o.regime ? { rec: { c: o.regime } } : null,
   radar: o.radarWet ? { wet: 1 } : null,
   spring: o.spring ? { ls: 30 } : null,
-  it: o.intermittent ? 1 : 0
+  it: o.intermittent ? 1 : 0,
+  /* a gauge reading already vetted by measuredFor(): fresh, same stream, close */
+  meas: "meas" in o ? { q: o.meas } : null
 });
 
 const ev = (r, q, rain, opts = {}) =>
@@ -94,6 +96,26 @@ check("near-perennial says why it is unsure",
       why(reach({ regime: "N" }), 5, 0), "nearperennial");
 check("an unclassified reach without rain stays unverified",
       ev(reach(), 5, 0), flow.EV_UNVER);
+
+console.log("\n-- a measurement outranks the model, and says so --");
+check("a measured flow beats a rare regime with no rain",
+      why(reach({ regime: "R", meas: 2 }), 40, 0), "measured");
+check("a measured flow beats radar",
+      why(reach({ radarWet: 1, meas: 2 }), 5, 0), "measured");
+check("a measured flow beats a model that says dry",
+      ev(reach({ meas: 2 }), 0.001, 0), flow.EV_FLOW);
+check("a measured flow is not no-data when the model has nothing",
+      ev(reach({ meas: 2 }), null, null), flow.EV_FLOW);
+check("a measured zero beats a model, radar and rain together",
+      ev(reach({ radarWet: 1, spring: 1, regime: "P", meas: 0 }), 40, 200), flow.EV_DRY);
+check("a measured zero says it was measured",
+      why(reach({ meas: 0 }), 40, 200), "measured");
+check("exactly at the dry threshold a measurement is flow, as for the model",
+      ev(reach({ meas: 0.01 }), null, null), flow.EV_FLOW);
+check("a measurement with no flow value falls through the ladder",
+      ev(reach({ meas: null }), 5, 0), flow.EV_UNVER);
+check("no measurement leaves the ladder untouched",
+      why(reach({ radarWet: 1 }), 5, 0), "radar");
 
 console.log("\n-- discharge classes, which drive colour and width --");
 check("no value is the unknown class", cls.classOf(null), cls.CLS_UNKNOWN);

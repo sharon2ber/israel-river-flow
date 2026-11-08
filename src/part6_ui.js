@@ -95,7 +95,15 @@ function showReach(i){
         (r.rain && Math.abs(r.rain.mm - r.rainUp) > 0.05
           ? ", " + T("ev_rain_up").replace("%c", r.rain.mm.toFixed(1)) : "") + "</span>"
       : '<span style="color:var(--ink-3)">' + T("nodata") + "</span>");
-  if (r.ev === EV_FLOW){
+  if (r.meas){
+    const age = r.meas.ageMin < 90 ? r.meas.ageMin + " min" : Math.round(r.meas.ageMin / 60) + " h";
+    h += row(T("ev_meas"), T("ev_meas_val").replace("%q", r.meas.q.toFixed(r.meas.q < 1 ? 3 : 2))
+        .replace("%g", esc(LANG === "he" ? (r.meas.he || r.meas.en || "") : (r.meas.en || r.meas.he || "")))
+        .replace("%a", age));
+    h += '<dt></dt><dd style="color:var(--ink-3);font-size:12px;line-height:1.45">' +
+         esc(T(r.ev === EV_DRY ? "ev_why_measured_dry" : "ev_why_measured")) + "</dd>";
+  }
+  if (r.ev === EV_FLOW && !r.meas){
     const w = r.evWhy === "radar"   ? T("ev_why_radar")
             : r.evWhy === "radarup" ? T("ev_why_radarup")
             : r.evWhy === "spring" ? T("ev_why_spring").replace("%s",

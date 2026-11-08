@@ -49,6 +49,7 @@ validation = json.loads((root / "data/validation.json").read_text(encoding="utf-
 regime = json.loads((root / "data/regime.json").read_text(encoding="utf-8"))
 coast = json.loads((root / "data/coast.json").read_text(encoding="utf-8"))
 springs = json.loads((root / "data/springs.json").read_text(encoding="utf-8"))
+measured = json.loads((root / "data/measured.json").read_text(encoding="utf-8"))
 
 head = (src / "part1_head.html").read_text(encoding="utf-8")
 body = (src / "part2_body.html").read_text(encoding="utf-8")
@@ -66,6 +67,7 @@ PARTS = [
     "part4g_basins.js",    # drainage basins and the DRAIN_TO graph
     "part4h_spines.js",    # assembling one river out of many segments
     "part4i_gapfill.js",   # filling holes the official layer leaves
+    "part4j_measured.js",  # a gauge reading on this very reach: top rung of the ladder
     "part5_map.js",        # Leaflet, application state S, canvas renderer
     "part6_ui.js",         # panels, tooltip, search, layer controls
     "part7_boot.js",       # About text and the boot sequence
@@ -80,9 +82,13 @@ body = body.replace("/*EXTENT*/", json.dumps(extent, separators=(",", ":")))
 body = body.replace("/*VALIDATION*/", json.dumps(validation, ensure_ascii=False, separators=(",", ":")))
 body = body.replace("/*REGIME*/", json.dumps(regime, ensure_ascii=False, separators=(",", ":")))
 body = body.replace("/*COAST*/", json.dumps(coast, separators=(",", ":")))
+body = body.replace("/*MEASURED*/", json.dumps(measured, ensure_ascii=False, separators=(",", ":")))
 body = body.replace("/*SPRINGS*/", json.dumps(springs, ensure_ascii=False, separators=(",", ":")))
 
 out = head + body + js + "\n</script>\n</body>\n</html>\n"
 p = dist / "river_flow_israel.html"
-p.write_text(out, encoding="utf-8")
+# newline="\n": write_text() would turn every \n into \r\n on Windows, and the
+# unit tests pull code out of this file with patterns that expect \n.
+with open(p, "w", encoding="utf-8", newline="\n") as fh:
+    fh.write(out)
 print(f"wrote {p}  {len(out.encode('utf-8'))/1024:.0f} KB")
