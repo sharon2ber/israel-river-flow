@@ -25,7 +25,8 @@ function riversFor(bb){
   return { version: 0.6, elements: els };
 }
 
-async function run(name, plan){
+async function run(name, plan, opts){
+  opts = opts || {};
   const browser = await chromium.launch(ENV.launchOptions());
   const page = await browser.newPage({ viewport: { width: 1280, height: 820 } });
   const errors = [];
@@ -47,6 +48,7 @@ async function run(name, plan){
       if (verdict === "remark") return route.fulfill({ status: 200, contentType: "application/json",
         body: JSON.stringify({ version: 0.6, remark: "runtime error: Query timed out", elements: [] }) });
       if (verdict === "dead")   return route.abort("failed");
+      if (verdict === "hang")   return new Promise(() => {});      /* accepts the connection, never answers */
       return route.fulfill({ status: 200, contentType: "application/json",
         body: JSON.stringify(isWater ? F.WATER : riversFor(bandOf(body))) });
     }
@@ -82,6 +84,7 @@ async function run(name, plan){
   await page.goto(FILE, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(200);
   await page.evaluate(() => { try { indexedDB.deleteDatabase("riverflow_il"); } catch(e){} });
+  const t0 = Date.now();
   await page.goto(FILE, { waitUntil: "domcontentloaded" });
 
   const settled = await page.waitForFunction(() => {
@@ -91,8 +94,23 @@ async function run(name, plan){
     return false;
   }, { timeout: 90000 }).then(h => h.jsonValue()).catch(() => "timeout");
 
+  const msToMap = Date.now() - t0;
   await page.waitForTimeout(800);
-  const out = { name, settled, overpassCalls };
+  const out = { name, settled, overpassCalls, msToMap };
+  if (opts.fill){
+    /* OpenStreetMap's reaches arrive behind the map; wait for them, then check they
+       were brought up to the same standard as the rest (a cell, and an evidence state). */
+    out.filled = await page.waitForFunction(n => S.reaches.length >= n, opts.fill, { timeout: 60000 })
+      .then(() => true).catch(() => false);
+    /* reservoirs and dams are fetched after the reaches have been brought up to standard,
+       so when they appear the catch-up is over */
+    out.waterAfter = await page.waitForFunction(() => S.water.polys.length + S.water.dams.length, null, { timeout: 60000 })
+      .then(h => h.jsonValue()).catch(() => 0);
+    await page.waitForTimeout(1500);
+    out.unprocessed = await page.evaluate(() =>
+      S.reaches.filter(r => !r.cell || r.ev === undefined || r.ev === null).length);
+    out.unflowed = await page.evaluate(() => S.reaches.filter(r => !S.flow.has(r.cell)).length);
+  }
   out.reaches = await page.evaluate(() => S.reaches.length).catch(() => -1);
   out.banner  = await page.evaluate(() => { const b = document.querySelector("#banner"); return b ? b.innerText.trim() : ""; });
   out.bootMsg = await page.evaluate(() => { const b = document.querySelector("#bmsg"); return b ? b.innerText.trim().slice(0, 200) : ""; });
@@ -118,13 +136,20 @@ async function run(name, plan){
 
 (async () => {
   const results = [];
-  results.push(await run("all-ok", () => "ok"));
-  results.push(await run("partial", (n, body, isWater) =>
+  /* ONLY=all-ok|hung npm run test:resilience runs just the scenarios whose name matches (for debugging) */
+  const only = process.env.ONLY ? new RegExp(process.env.ONLY) : null;
+  const go = (name, plan, opts) => only && !only.test(name) ? Promise.resolve(null) : run(name, plan, opts);
+  results.push(await go("all-ok", () => "ok", { fill: 2623 }));
+  /* Overpass accepts every request and never answers: the map must still open, quickly,
+     on the official layer, and say that the rest is on its way. */
+  results.push(await go("hung-overpass", () => "hang"));
+  results.push(await go("partial", (n, body, isWater) =>
     (!isWater && (n === 2 || n === 4)) ? "fail" : "ok"));
-  results.push(await run("total-outage", (n, body, isWater) => isWater ? "ok" : "dead"));
-  results.push(await run("remarks", (n, body, isWater) => isWater ? "ok" : (n < 12 ? "remark" : "ok")));
+  results.push(await go("total-outage", (n, body, isWater) => isWater ? "ok" : "dead"));
+  results.push(await go("remarks", (n, body, isWater) => isWater ? "ok" : (n < 12 ? "remark" : "ok")));
   /* the official layer down, OSM healthy: the map must fall back cleanly */
-  results.push(await run("no-official", (n, body) => body === "AGS" ? "no-ags" : "ok"));
+  results.push(await go("no-official", (n, body) => body === "AGS" ? "no-ags" : "ok"));
+  results.splice(0, results.length, ...results.filter(Boolean));
   console.log(JSON.stringify(results, null, 1));
 
   /* What resilience means here: a failing source must degrade the map, never
@@ -151,6 +176,21 @@ async function run(name, plan){
                   "reaches=" + (r.reaches || 0));
     }
   }
+  /* First visit: the map must not wait for OpenStreetMap. */
+  const byName = n => results.find(r => r.name === n) || {};
+  const A = byName("all-ok"), H = byName("hung-overpass");
+  const expect = (label, ok, detail) => {
+    if (!ok) bad++;
+    console.log((ok ? "ok  " : "FAIL"), label.padEnd(46), ok ? "" : detail);
+  };
+  expect("hung Overpass: the map opens anyway", H.settled === "map", "settled=" + H.settled);
+  expect("... well inside what waiting would cost", H.msToMap < 60000, "took " + H.msToMap + " ms");
+  expect("... on the official layer", H.reaches === 2600, "reaches=" + H.reaches);
+  expect("... saying the rest is on its way", /OpenStreetMap/.test(H.banner || ""), "banner=" + JSON.stringify(H.banner));
+  expect("healthy Overpass: reaches arrive behind the map", A.filled === true, "filled=" + A.filled);
+  expect("... each with a cell and an evidence state", A.unprocessed === 0, "unprocessed=" + A.unprocessed);
+  expect("... and the model has been asked about them", A.unflowed === 0, "unflowed=" + A.unflowed);
+  expect("... and reservoirs and dams arrive too", A.waterAfter > 0, "water=" + A.waterAfter);
   console.log(bad ? "\n" + bad + " FAILED" : "\nall scenarios pass");
   process.exit(bad ? 1 : 0);
 })();

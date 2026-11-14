@@ -869,13 +869,26 @@ async function band(q){
 /* OpenStreetMap fills the gaps the national layer leaves: the Golan, the
    Jordan and Yarmouk headwaters, and unnamed wadis. Anything OSM draws on top
    of an official stream is dropped, so no river is painted twice. */
-async function loadRivers(state){
+/* `quiet` is the background mode (see osmCatchUp): the map is already on screen, so
+   progress goes to the banner instead of the loading overlay, and nothing is built or
+   swapped into S.reaches until the last band is in, so the reader never sees a
+   half-assembled network. */
+async function loadRivers(state, quiet){
   const failed = [];
   const base = S.osmBase || [];
   const idx = officialIndex(base);
+  const make = () => {
+    let built = buildReaches({ elements: Array.from(state.byId.values()) })
+      .filter(r => !coveredByOfficial(r.g, idx));
+    for (const r of built) r.src = 0;
+    /* Israel's map: foreign water stays only where it crosses Israel's border */
+    return keepIsraeliAndCrossing(built, base, S.borders);
+  };
   for (let i = 0; i < RIVER_BANDS.length; i++){
     if (state.done.has(i)) continue;
-    say(0.40 + 0.16 * (i / RIVER_BANDS.length),
+    if (quiet) banner('<div style="padding:9px 13px;font-size:11.5px;color:var(--ink-2)">' +
+      esc(T("osm_bg").replace("%i", i + 1).replace("%t", RIVER_BANDS.length)) + "</div>");
+    else say(0.40 + 0.16 * (i / RIVER_BANDS.length),
       (he() ? "משלימים ועוקבים אחרי נחלים חוצי גבול · חלק " : "filling gaps and following cross-border streams · part ")
       + (i+1) + "/" + RIVER_BANDS.length);
     const els = await band(qRivers(RIVER_BANDS[i]));
@@ -891,15 +904,13 @@ async function loadRivers(state){
     }
     state.done.add(i);
     for (const e of els) if (!state.byId.has(e.id)) state.byId.set(e.id, e);
-    let built = buildReaches({ elements: Array.from(state.byId.values()) })
-      .filter(r => !coveredByOfficial(r.g, idx));
-    for (const r of built) r.src = 0;
-    /* Israel's map: foreign water stays only where it crosses Israel's border */
-    built = keepIsraeliAndCrossing(built, base, S.borders);
+    if (quiet) continue;
+    const built = make();
     S.osmFresh = built;
     S.reaches = base.concat(built);
     buildGroups(); reset(); invalidate();
   }
+  if (quiet && state.done.size) S.osmFresh = make();     /* built once, not once per band */
   return failed;
 }
 
@@ -968,7 +979,85 @@ function overpassDeadEnd(state){
   bmsg.appendChild(wrap);
 }
 
-async function afterRivers(state, failed){
+/* Bring reaches that arrived after the first pass up to the same standard as the rest:
+   cells, basins, model discharge, rain, radar, elevations, then the evidence passes.
+   This is the sequence the gap filler already uses on every visit, plus radar and
+   elevations, which the first pass also does. Until it finishes, the new reaches are
+   honestly "no model data", never guessed. */
+async function reprocessNetwork(){
+  const cells = assignCells();
+  assignBasins(); assignRegimes(); assignSprings();
+  buildGroups(); reset();
+  const need = cells.filter(c => !S.flow.has(c));
+  let left = [];
+  if (need.length) left = (await fetchFlow(need, S.flow, null, 250)).remaining;
+  const needR = cells.filter(c => !S.rain.has(c));
+  if (needR.length) await fetchRain(needR, S.rain, null);
+  const day = new Date().toISOString().slice(0,10);
+  if (S.flow.size) await cacheSet("flow_" + day, { pairs: Array.from(S.flow.entries()) });
+  if (S.rain.size) await cacheSet("rain_" + day, { pairs: Array.from(S.rain.entries()) });
+  if (RADAR) await assignRadar(cells);
+  const ec = (await cacheGet("cellel")) || { v:1, map:{} };
+  S.cellEl = ec.map;
+  const needEl = cells.filter(c => ec.map[c] == null).slice(0, 1600);
+  if (needEl.length){ await cellElevations(needEl, ec.map); await cacheSet("cellel", { v:1, map:ec.map }); }
+  if (S.basins.length) buildBasinGraph();
+  S.crossings = findCrossings(S.reaches, S.borders);
+  assignRegimes(); assignSprings(); assignSpines(); reliabilityPass();
+  invalidate(); updateStat(); renderAudit();
+  /* the cells the per-minute allowance did not cover, once the window resets */
+  if (left.length) setTimeout(async () => {
+    try{
+      await fetchFlow(left, S.flow, null);
+      const lr = left.filter(c => !S.rain.has(c));
+      if (lr.length) await fetchRain(lr, S.rain, null);
+      if (S.flow.size) await cacheSet("flow_" + day, { pairs: Array.from(S.flow.entries()) });
+      if (S.rain.size) await cacheSet("rain_" + day, { pairs: Array.from(S.rain.entries()) });
+      assignRegimes(); assignSprings(); assignSpines(); reliabilityPass();
+      invalidate(); updateStat();
+    }catch(e){}
+  }, 62000);
+}
+
+/* First visit only. The map opens on the official layer, and what OpenStreetMap adds
+   (the Golan and Jordan headwaters, unnamed wadis, streams that cross the border,
+   reservoirs and dams) is fetched behind it. The public Overpass servers are often
+   slow or down, and waiting on them used to keep the whole map hidden for minutes.
+   It must never throw: any failure leaves the map as it is, with a note and a retry. */
+async function osmCatchUp(state){
+  const note = html => banner('<div style="padding:9px 13px;font-size:11.5px;color:var(--ink-2)">' + html + "</div>");
+  try{
+    const failed = await loadRivers(state, true);
+    if (state.done.size){
+      await saveRivers(state);
+      S.reaches = (S.osmBase || []).concat(S.osmFresh || []);
+      note(esc(T("osm_bg_flow")));
+      await reprocessNetwork();
+    }
+    if (!S.water.polys.length && !S.water.dams.length){
+      const all = [];
+      for (const bb of WATER_BANDS){
+        const els = await band(qWater(bb));
+        if (els) all.push.apply(all, els);
+      }
+      if (all.length){
+        const seen = new Set(), uniq = [];
+        for (const e of all){ const k = e.type + e.id; if (!seen.has(k)){ seen.add(k); uniq.push(e); } }
+        S.water = buildWater({ elements: uniq });
+        await cacheSet("water", { v:3, at:Date.now(), data:S.water });
+        reset(); invalidate();
+      }
+    }
+    if (failed.length){
+      note(esc(T("partial").replace("%n", Math.min(failed.length, RIVER_BANDS.length)).replace("%t", RIVER_BANDS.length)) +
+        ' <button class="lnk" id="bretry">' + T("retry") + "</button>");
+      const br = $("#bretry");
+      if (br) br.onclick = () => { br.textContent = "…"; osmCatchUp(state); };
+    } else banner("");
+  }catch(e){ banner(""); }
+}
+
+async function afterRivers(state, failed, deferred){
   if (failed && failed.length)
     banner('<div style="padding:9px 13px;font-size:11.5px;color:var(--ink-2)">' +
       T("partial").replace("%n", Math.min(failed.length, RIVER_BANDS.length)).replace("%t", RIVER_BANDS.length) +
@@ -977,7 +1066,7 @@ async function afterRivers(state, failed){
   say(0.58, he() ? "מוסיפים מאגרים וסכרים…" : "adding reservoirs and dams…");
   const cW = await cacheGet("water");
   if (cW && Date.now() - cW.at < CACHE_TTL && cW.v === 3) S.water = cW.data;
-  else {
+  else if (!deferred){          /* on a first visit osmCatchUp fetches these behind the map */
     const all = [];
     for (const bb of WATER_BANDS){
       const els = await band(qWater(bb));
@@ -1104,7 +1193,7 @@ async function afterRivers(state, failed){
      First the holes: one named river in five is missing more than 3 km of its
      own channel in the official layer, and no grouping rule can join geometry
      that is not there. Then the spines, which re-order what they touch. */
-  setTimeout(async () => {
+  const gapJob = async () => {
     try{
       const res = await fillGaps(120, (f, nm) => {
         banner('<div style="padding:9px 13px;font-size:11.5px;color:var(--ink-2)">' +
@@ -1131,7 +1220,10 @@ async function afterRivers(state, failed){
       const got = await loadTopSpines(60);
       if (got){ assignSpines(); reliabilityPass(); invalidate(); updateStat(); renderAudit(); }
     }catch(e){ banner(""); }
-  }, 3000);
+  };
+  /* Both jobs rewrite S.reaches, so on a first visit the gap filler waits for
+     OpenStreetMap's reaches to be in rather than racing them. osmCatchUp never throws. */
+  (deferred ? osmCatchUp(state) : Promise.resolve()).then(() => setTimeout(gapJob, 3000));
 
   /* Fill in the rest of the network quietly once the per-minute window resets. */
   if (leftover.length){
@@ -1200,12 +1292,21 @@ async function start(){
                    Date.now() - cR.at < CACHE_TTL;
   let osm = (cR && cR.v === 4 && cR.data && Date.now() - cR.at < CACHE_TTL) ? cR.data : [];
   let failed = [];
+  let deferred = false;
   if (!complete){
     S.osmBase = official;
-    failed = await loadRivers(state);
-    if (state.done.size){
-      osm = S.osmFresh || osm;
-      await cacheSet("osm", { v:4, at:Date.now(), data:osm, done:Array.from(state.done) });
+    if (official.length){
+      /* The official layer is enough to open the map. OpenStreetMap's part is fetched
+         behind it (osmCatchUp), so a slow or dead Overpass can no longer keep the
+         reader waiting. Whatever an earlier partial visit cached is used meanwhile. */
+      deferred = true;
+    } else {
+      /* No official layer: OpenStreetMap is all there is, so it is waited for. */
+      failed = await loadRivers(state);
+      if (state.done.size){
+        osm = S.osmFresh || osm;
+        await cacheSet("osm", { v:4, at:Date.now(), data:osm, done:Array.from(state.done) });
+      }
     }
   } else {
     for (let i = 0; i < RIVER_BANDS.length; i++) state.done.add(i);
@@ -1215,6 +1316,6 @@ async function start(){
   buildGroups(); reset(); invalidate();
 
   if (!S.reaches.length){ overpassDeadEnd(state); return; }
-  await afterRivers(state, failed);
+  await afterRivers(state, failed, deferred);
 }
 start();
