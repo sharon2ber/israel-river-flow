@@ -6632,6 +6632,9 @@ async function band(q){
 /* OpenStreetMap fills the gaps the national layer leaves: the Golan, the
    Jordan and Yarmouk headwaters, and unnamed wadis. Anything OSM draws on top
    of an official stream is dropped, so no river is painted twice. */
+let gapBusy = false;       /* the gap filler owns the banner while it runs */
+let osmNote = "";          /* what the background OpenStreetMap fetch last told the reader, if it is still going */
+
 /* `quiet` is the background mode (see osmCatchUp): the map is already on screen, so
    progress goes to the banner instead of the loading overlay, and nothing is built or
    swapped into S.reaches until the last band is in, so the reader never sees a
@@ -6649,8 +6652,11 @@ async function loadRivers(state, quiet){
   };
   for (let i = 0; i < RIVER_BANDS.length; i++){
     if (state.done.has(i)) continue;
-    if (quiet) banner('<div style="padding:9px 13px;font-size:11.5px;color:var(--ink-2)">' +
-      esc(T("osm_bg").replace("%i", i + 1).replace("%t", RIVER_BANDS.length)) + "</div>");
+    if (quiet){
+      osmNote = '<div style="padding:9px 13px;font-size:11.5px;color:var(--ink-2)">' +
+        esc(T("osm_bg").replace("%i", i + 1).replace("%t", RIVER_BANDS.length)) + "</div>";
+      if (!gapBusy) banner(osmNote);
+    }
     else say(0.40 + 0.16 * (i / RIVER_BANDS.length),
       (he() ? "משלימים ועוקבים אחרי נחלים חוצי גבול · חלק " : "filling gaps and following cross-border streams · part ")
       + (i+1) + "/" + RIVER_BANDS.length);
@@ -6787,13 +6793,18 @@ async function reprocessNetwork(){
    reservoirs and dams) is fetched behind it. The public Overpass servers are often
    slow or down, and waiting on them used to keep the whole map hidden for minutes.
    It must never throw: any failure leaves the map as it is, with a note and a retry. */
-async function osmCatchUp(state){
+async function osmCatchUp(state, after){
   const note = html => banner('<div style="padding:9px 13px;font-size:11.5px;color:var(--ink-2)">' + html + "</div>");
   try{
+    /* the slow part, the network wait, runs alongside the gap filler; only the
+       step that rewrites S.reaches waits for it */
     const failed = await loadRivers(state, true);
     if (state.done.size){
       await saveRivers(state);
-      S.reaches = (S.osmBase || []).concat(S.osmFresh || []);
+      if (after) await after;
+      /* everything that is not OpenStreetMap's (the official layer and whatever the gap
+         filler added) stays; OpenStreetMap's reaches are replaced by the fresh set */
+      S.reaches = S.reaches.filter(r => r.src !== 0).concat(S.osmFresh || []);
       note(esc(T("osm_bg_flow")));
       await reprocessNetwork();
     }
@@ -6811,13 +6822,14 @@ async function osmCatchUp(state){
         reset(); invalidate();
       }
     }
+    osmNote = "";
     if (failed.length){
       note(esc(T("partial").replace("%n", Math.min(failed.length, RIVER_BANDS.length)).replace("%t", RIVER_BANDS.length)) +
         ' <button class="lnk" id="bretry">' + T("retry") + "</button>");
       const br = $("#bretry");
       if (br) br.onclick = () => { br.textContent = "…"; osmCatchUp(state); };
     } else banner("");
-  }catch(e){ banner(""); }
+  }catch(e){ osmNote = ""; banner(""); }
 }
 
 async function afterRivers(state, failed, deferred){
@@ -6856,11 +6868,13 @@ async function afterRivers(state, failed, deferred){
 
   const missing = cellList.filter(c => !S.flow.has(c));
   let leftover = [];
+  let flowDoneAt = Date.now();
   if (missing.length){
     say(0.66, he() ? "שואלים את מודל GloFAS…" : "asking the GloFAS model…");
     const res = await fetchFlow(missing, S.flow, p => say(0.66 + p*0.29,
       (he() ? "ספיקה: " : "discharge: ") + Math.round(p*100) + "%"), FIRST_PASS);
     leftover = res.remaining;
+    flowDoneAt = Date.now();
     if (S.flow.size) await cacheSet(dayKey, { pairs: Array.from(S.flow.entries()) });
   }
   setDays();
@@ -6957,6 +6971,7 @@ async function afterRivers(state, failed, deferred){
      own channel in the official layer, and no grouping rule can join geometry
      that is not there. Then the spines, which re-order what they touch. */
   const gapJob = async () => {
+    gapBusy = true;
     try{
       const res = await fillGaps(120, (f, nm) => {
         banner('<div style="padding:9px 13px;font-size:11.5px;color:var(--ink-2)">' +
@@ -6983,10 +6998,16 @@ async function afterRivers(state, failed, deferred){
       const got = await loadTopSpines(60);
       if (got){ assignSpines(); reliabilityPass(); invalidate(); updateStat(); renderAudit(); }
     }catch(e){ banner(""); }
+    gapBusy = false; S.gapDone = true;
+    if (osmNote && !$("#banner")) banner(osmNote);       /* the gap filler cleared the banner; the OpenStreetMap note is still true */
   };
-  /* Both jobs rewrite S.reaches, so on a first visit the gap filler waits for
-     OpenStreetMap's reaches to be in rather than racing them. osmCatchUp never throws. */
-  (deferred ? osmCatchUp(state) : Promise.resolve()).then(() => setTimeout(gapJob, 3000));
+  /* The gap filler and the spines are what join a river's pieces into one watercourse,
+     which is what keeps its flow consistent along its length, so they run first, 3 s
+     after the map as they always did, and never wait on OpenStreetMap. On a first visit
+     osmCatchUp fetches over the network meanwhile and only applies its result once the
+     gap filler is done, because both rewrite S.reaches. gapJob never throws. */
+  const gapDone = new Promise(res => setTimeout(() => gapJob().then(res, res), 3000));
+  if (deferred) osmCatchUp(state, gapDone);
 
   /* Fill in the rest of the network quietly once the per-minute window resets. */
   if (leftover.length){
@@ -7009,7 +7030,11 @@ async function afterRivers(state, failed, deferred){
       assignSpines();
       reliabilityPass();
       invalidate(); updateStat();
-    }, 62000);
+    /* The allowance is per minute, counted from the first pass, which ended before the
+       radar, rain, elevations and drawing steps. Waiting a full minute from here would
+       leave a good part of the network showing "no model data" for about twice as long
+       as it has to. */
+    }, Math.max(1500, 61500 - (Date.now() - flowDoneAt)));
   }
 }
 

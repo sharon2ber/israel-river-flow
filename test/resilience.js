@@ -97,6 +97,12 @@ async function run(name, plan, opts){
   const msToMap = Date.now() - t0;
   await page.waitForTimeout(800);
   const out = { name, settled, overpassCalls, msToMap };
+  if (opts.gap){
+    /* the gap filler and spines are what join a river's pieces, so they must not queue
+       behind a slow Overpass */
+    out.gapDone = await page.waitForFunction(() => S.gapDone === true, null, { timeout: 40000 })
+      .then(() => true).catch(() => false);
+  }
   if (opts.fill){
     /* OpenStreetMap's reaches arrive behind the map; wait for them, then check they
        were brought up to the same standard as the rest (a cell, and an evidence state). */
@@ -142,7 +148,7 @@ async function run(name, plan, opts){
   results.push(await go("all-ok", () => "ok", { fill: 2623 }));
   /* Overpass accepts every request and never answers: the map must still open, quickly,
      on the official layer, and say that the rest is on its way. */
-  results.push(await go("hung-overpass", () => "hang"));
+  results.push(await go("hung-overpass", () => "hang", { gap: true }));
   results.push(await go("partial", (n, body, isWater) =>
     (!isWater && (n === 2 || n === 4)) ? "fail" : "ok"));
   results.push(await go("total-outage", (n, body, isWater) => isWater ? "ok" : "dead"));
@@ -186,6 +192,7 @@ async function run(name, plan, opts){
   expect("hung Overpass: the map opens anyway", H.settled === "map", "settled=" + H.settled);
   expect("... well inside what waiting would cost", H.msToMap < 60000, "took " + H.msToMap + " ms");
   expect("... on the official layer", H.reaches === 2600, "reaches=" + H.reaches);
+  expect("... and the gap filler is not held up by it", H.gapDone === true, "gapDone=" + H.gapDone);
   expect("... saying the rest is on its way", /OpenStreetMap/.test(H.banner || ""), "banner=" + JSON.stringify(H.banner));
   expect("healthy Overpass: reaches arrive behind the map", A.filled === true, "filled=" + A.filled);
   expect("... each with a cell and an evidence state", A.unprocessed === 0, "unprocessed=" + A.unprocessed);
