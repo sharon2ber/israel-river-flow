@@ -50,6 +50,7 @@ regime = json.loads((root / "data/regime.json").read_text(encoding="utf-8"))
 coast = json.loads((root / "data/coast.json").read_text(encoding="utf-8"))
 springs = json.loads((root / "data/springs.json").read_text(encoding="utf-8"))
 measured = json.loads((root / "data/measured.json").read_text(encoding="utf-8"))
+rainnorm = json.loads((root / "data/rain_normal.json").read_text(encoding="utf-8"))
 
 head = (src / "part1_head.html").read_text(encoding="utf-8")
 body = (src / "part2_body.html").read_text(encoding="utf-8")
@@ -68,6 +69,7 @@ PARTS = [
     "part4h_spines.js",    # assembling one river out of many segments
     "part4i_gapfill.js",   # filling holes the official layer leaves
     "part4j_measured.js",  # a gauge reading on this very reach: top rung of the ladder
+    "part4k_rainnormal.js",  # typical annual rain per cell: context in the panel, never evidence
     "part5_map.js",        # Leaflet, application state S, canvas renderer
     "part6_ui.js",         # panels, tooltip, search, layer controls
     "part7_boot.js",       # About text and the boot sequence
@@ -83,6 +85,7 @@ body = body.replace("/*VALIDATION*/", json.dumps(validation, ensure_ascii=False,
 body = body.replace("/*REGIME*/", json.dumps(regime, ensure_ascii=False, separators=(",", ":")))
 body = body.replace("/*COAST*/", json.dumps(coast, separators=(",", ":")))
 body = body.replace("/*MEASURED*/", json.dumps(measured, ensure_ascii=False, separators=(",", ":")))
+body = body.replace("/*RAINNORM*/", json.dumps(rainnorm, ensure_ascii=False, separators=(",", ":")))
 body = body.replace("/*SPRINGS*/", json.dumps(springs, ensure_ascii=False, separators=(",", ":")))
 
 out = head + body + js + "\n</script>\n</body>\n</html>\n"

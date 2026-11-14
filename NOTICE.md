@@ -26,6 +26,7 @@ Leaflet's own copyright notice is preserved inside the built file, as its licenc
 | Israel's four boundary lines; coastline | [Natural Earth](https://www.naturalearthdata.com/) | public domain |
 | GloFAS-vs-gauge validation figures | derived by this project | AGPL-3.0-or-later |
 | Measured discharge and water level, 10-minute resolution (`data/measured.json`) | Israel Hydrological Service data retrieval API | **permission granted to this project — conditions below** |
+| Mean annual rainfall 1991–2020, averaged onto 0.05° grid cells (`data/rain_normal.json`) | Israel Meteorological Service, via the Ministry of Environmental Protection's Climate Risk Portal | **written permission for processed values — see "Typical annual rainfall" below** |
 
 ## The Hydrological Service API — the one source with negotiated terms
 
@@ -56,6 +57,33 @@ arrangement is not something the licence can hand you.
 
 Storing the readings cumulatively is explicitly permitted: the API serves only the most
 recent ~42 hours, so without a local store the record would be lost as it passed.
+
+## Typical annual rainfall — processed values only
+
+`data/rain_normal.json` holds the Israel Meteorological Service's 1991–2020 mean annual
+rainfall (millimetres a year), published through the Ministry of Environmental Protection's
+[Climate Risk Portal](https://israel-climate-risks.sviva.gov.il/), averaged by this project
+onto the 0.05° grid cells the map already uses (`scripts/build_rain_normal.py`).
+
+What was agreed, in writing, with the Ministry's public-inquiries office on 10 November 2026:
+
+- **Processed values may be shown in the map and kept in this public repository**, provided
+  they are marked as not being the original values and credited to the Israel Meteorological
+  Service. Both are done wherever the number appears (the stream panel) and in the About text.
+- **The original layer file is not covered.** The Ministry sent the question of source layers to
+  the Meteorological Service's own terms, and no separate approval was obtained. So the layer
+  (the `.tif`) is **not** in this repository and must not be added. Only the block means are.
+- The Meteorological Service's own
+  [terms of use](https://ims.gov.il/he/termOfuse) ask for a prominent, non-misleading statement that
+  the source is the Service, that the Service bears no responsibility for the data or its use, and
+  that it is not a party to the publication. The About text says all three. Keep them.
+
+Because the numbers are an average of a layer over a ~5 km cell, they say how wet a place usually
+is. They are shown for context beside the recent-rain figure and are never an input to the
+evidence ladder.
+
+This is a summary of correspondence, not legal advice. The Ministry's reply is kept by the
+maintainer and is not reproduced here, since it names an official.
 
 ## Data fetched live, at the reader's request
 

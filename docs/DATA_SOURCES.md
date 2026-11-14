@@ -57,6 +57,7 @@ works from `file://` with no connection at all.
 | `data/regime.json` | 154 gauges classified perennial / near-perennial / seasonal / rare | **Derived** by this project | Computed from 24 hydrological years (2000/01–2023/24) of measured daily discharge. Method and full results in [`data/regime.md`](../data/regime.md) |
 | `data/springs.json` | 383 springs with mean, summer mean and latest measured discharge | **Measured** | Hydrological Service, 112,597 individual measurements via data.gov.il |
 | `data/validation.json` | GloFAS reanalysis beside each gauge's measured mean, for a stratified sample | **Derived** by this project | Recomputable live in the browser — see the About panel |
+| `data/rain_normal.json` | Mean annual rainfall 1991–2020 on the map's 0.05° cells, shown in the stream panel as context. **Never an input to the evidence ladder.** Empty until the layer has been processed with `scripts/build_rain_normal.py` | **Derived** by this project | Israel Meteorological Service via the Ministry of Environmental Protection's Climate Risk Portal. Processed values only, marked as such; the original layer is not stored here. Terms in [NOTICE.md](../NOTICE.md) |
 | `data/borders.json` | Israel's four boundary lines | Reference | Natural Earth admin-0 |
 | `data/coast.json` | The Mediterranean coastline | Reference | Natural Earth |
 | `data/extent.json` | The area the Water Authority layer itself covers | Reference | Derived from that layer |

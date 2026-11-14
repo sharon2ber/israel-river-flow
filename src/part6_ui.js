@@ -95,6 +95,15 @@ function showReach(i){
         (r.rain && Math.abs(r.rain.mm - r.rainUp) > 0.05
           ? ", " + T("ev_rain_up").replace("%c", r.rain.mm.toFixed(1)) : "") + "</span>"
       : '<span style="color:var(--ink-3)">' + T("nodata") + "</span>");
+  /* Context, not evidence: nothing in the evidence ladder reads this (test/rainnormal.js
+     enforces it). The credit sits right beside the number because the Service's terms ask
+     for it to be prominent wherever its data is used. */
+  const rn = r.cell ? rainNormalFor(r.cell) : null;
+  if (rn){
+    h += row(T("ev_normal"), "<bdi>" + T("ev_normal_val").replace("%v", fmtN(rn.mm)) + "</bdi>");
+    h += '<dt></dt><dd style="color:var(--ink-3);font-size:11.5px;line-height:1.45">' +
+         esc(T("ev_normal_note").replace("%p", rn.period)) + "</dd>";
+  }
   if (r.meas){
     const age = r.meas.ageMin < 90 ? r.meas.ageMin + " min" : Math.round(r.meas.ageMin / 60) + " h";
     h += row(T("ev_meas"), T("ev_meas_val").replace("%q", r.meas.q.toFixed(r.meas.q < 1 ? 3 : 2))

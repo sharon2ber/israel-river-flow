@@ -357,6 +357,12 @@ this attribution being stated, which is why both are kept here. Note that the AG
 the <i>software</i> only: anyone redistributing this map commercially, or charging for access to
 the measured data, needs their own permission from the Hydrological Service &mdash; the licence on
 the code does not grant it.</p>
+<p><b>Typical annual rainfall</b> (&ldquo;Typical year here&rdquo; in a stream&rsquo;s panel) is the 1991&ndash;2020
+mean from the <b>Israel Meteorological Service</b>, published through the Ministry of Environmental
+Protection&rsquo;s Climate Risk Portal, which gave written permission for processed values to be shown
+here and kept in this project&rsquo;s public repository. These are block averages over 0.05&deg; grid
+cells made by this map, <b>not the original published values</b>. The Meteorological Service bears no
+responsibility for this map or for the figures in it, and is not a party to its publication.</p>
 <p>This map carries no warranty of any kind. It is not a flood warning system. Do not enter a
 wadi on the strength of it.</p>
 <p style="margin-top:16px"><button class="lnk" id="rebuild">Rebuild network cache</button></p>`;
@@ -673,6 +679,11 @@ BSD-2-Clause.</p>
 ללא תשלום ושיצוין מקורו, ולכן שני התנאים נשמרים כאן. חשוב לשים לב: רישיון ה־AGPL שלמעלה חל על
 <i>התוכנה</i> בלבד. מי שמפיץ את המפה למטרות מסחריות, או גובה תשלום על הגישה לנתונים המדודים, נדרש
 לאישור נפרד מהשירות ההידרולוגי &mdash; הרישיון על הקוד אינו מעניק אותו.</p>
+<p><b>כמות הגשם השנתית הטיפוסית</b> (&quot;שנה טיפוסית כאן&quot; בלוח של נחל) היא הממוצע לשנים
+1991&ndash;2020 של <b>השירות המטאורולוגי הישראלי</b>, שפורסם דרך פורטל סיכוני האקלים של המשרד להגנת
+הסביבה, אשר נתן אישור בכתב להציג כאן ערכים מעובדים ולשמור אותם במאגר הציבורי של הפרויקט. אלה
+ממוצעים של תאי רשת בני 0.05&deg; שחושבו על ידי המפה הזו, <b>ולא הערכים המקוריים שפורסמו</b>. השירות
+המטאורולוגי אינו נושא באחריות כלשהי למפה או לנתונים שבה, ואינו צד לפרסומה.</p>
 <p>המפה הזו ניתנת בלי כל אחריות. היא אינה מערכת התרעת שיטפונות. אל תיכנסו לוואדי על סמך מה
 שכתוב בה.</p>
 <p style="margin-top:16px"><button class="lnk" id="rebuild">בנייה מחדש של המטמון</button></p>`;

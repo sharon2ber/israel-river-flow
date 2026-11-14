@@ -5,8 +5,8 @@
   "scripts": {
     "build": "python3 build.py",
     "pretest": "npm run build",
-    "test": "node test/build.js && node test/flow.js && node test/water.js && node test/regime.js && node test/measured.js && node test/run.js",
-    "test:unit": "node test/build.js && node test/flow.js && node test/water.js && node test/regime.js && node test/measured.js",
+    "test": "node test/build.js && node test/flow.js && node test/water.js && node test/regime.js && node test/measured.js && node test/rainnormal.js && node test/run.js",
+    "test:unit": "node test/build.js && node test/flow.js && node test/water.js && node test/regime.js && node test/measured.js && node test/rainnormal.js",
     "test:ui": "node test/run.js",
     "test:resilience": "node test/resilience.js",
     "test:all": "npm test && npm run test:resilience"
